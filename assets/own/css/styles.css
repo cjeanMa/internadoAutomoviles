@@ -1,0 +1,134 @@
+a:hover{
+    text-decoration: none;
+}
+
+.bg-own-primary{
+    background: linear-gradient( 90deg, #f8f9fa 5%,  #00cec9 50%, #f8f9fa 95%);
+}
+
+.bg-logo-color{
+  background-color: #00b0bf;
+}
+
+.logo-page{
+    max-height: 60px;
+    border-radius: 10px;
+}
+
+.img-information{
+    width: 100%;
+    height: 300px;
+    background-position: center;
+    background-size: cover;
+}
+
+.card-sombra{
+    box-shadow: 3px 3px 10px 0px black;
+    min-height: 365px;
+}
+
+.card-sombra:hover{
+    box-shadow: 5px 0px 10px 0px gray;
+    transform: scale(1.05);
+}
+
+.map{
+  width: 100%;
+  height: 400px;
+}
+
+.img-producto{
+  width: 100%;
+  height: 450px;
+  border-radius: 10px;
+  border: 1px solid gray;
+}
+
+.img-cartilla{
+    width: 90%;
+    height: 200px;
+}
+
+
+.img-cartilla::after{
+  position: relative;
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+  background-color: red;
+  z-index: 2;
+}
+
+.titulo-cartilla{
+    max-width: 250px
+}
+
+.text-fb{
+    color: #235bc1;
+}
+
+/* Estilos del Footer */
+.footer {
+    background: #152F4F;
+    color: white;
+  }
+  .footer .links ul {
+    list-style-type: none;
+  }
+  .footer .links li a {
+    color: white;
+    -webkit-transition: color .2s;
+    transition: color .2s;
+  }
+  .footer .links li a:hover {
+    text-decoration: none;
+    color: #4180CB;
+  }
+  .footer .about-company i {
+    font-size: 25px;
+  }
+  .footer .about-company a {
+    color: white;
+    -webkit-transition: color .2s;
+    transition: color .2s;
+  }
+  .footer .about-company a:hover {
+    color: #4180CB;
+  }
+  .footer .location i {
+    font-size: 18px;
+  }
+  .footer .copyright p {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  /*Modificaciones para el login*/
+
+  .login-form {
+    width: 400px;
+    margin: 50px auto;
+  	font-size: 15px;
+}
+.login-form form {
+    margin-bottom: 15px;
+    background: #f7f7f7;
+    box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.3);
+    padding: 30px;
+}
+.login-form h2 {
+    margin: 0 0 15px;
+}
+.form-control, .btn {
+    min-height: 38px;
+    border-radius: 2px;
+}
+.btn {        
+    font-size: 15px;
+    font-weight: bold;
+}
+
+.imgPreview{
+  width: 100%;
+  height: auto;
+}
+#imgPreview{
+  border: 1px solid black;
+}
