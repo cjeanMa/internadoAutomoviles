@@ -26,10 +26,10 @@
         </div>
         <?php }?>
 
-        <!--<div class="col-12 g-recaptcha p-3" data-sitekey="6Lc3c8YZAAAAAC3ZZPjqMQQ2461AH9qW2f1p5wd6" data-callback="captchaConfirm"></div>-->
+        <div class="col-12 g-recaptcha p-3" data-sitekey="6LdbeLMZAAAAAEAZrMGzUTZPY9uMSconft3-IsI6" data-callback="captchaConfirm"></div>
 
         <div class="form-group">
-            <button type="submit" id="submit" class="btn btn-primary btn-block" disabled=false >Ingresar</button>
+            <button type="submit" id="submit" class="btn btn-primary btn-block" disabled="true">Ingresar</button>
         </div>
 
         <div  class="text-center">

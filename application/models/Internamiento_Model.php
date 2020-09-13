@@ -61,7 +61,20 @@ class Internamiento_Model extends CI_Model {
             return $this->db->get('boleta_int')->result_array();
         }
 
+        /* Funcion para obtener internamientos verificados satisfactoriamente */
         function get_internamientos_observados(){
+            $params = array(
+                'user_verificacion !=' => NULL,
+                'idActaControl !=' => NULL,
+                'verificacion'=> 1,
+            );
+            $this->db->order_by('cod_boleta','desc');
+            $this->db->where($params);
+            return $this->db->get('boleta_int')->result_array();
+        }
+
+
+        function get_internamientos_verificados(){
             $params = array(
                 'user_verificacion !=' => NULL,
                 'user_salida !=' => NULL,
@@ -73,6 +86,7 @@ class Internamiento_Model extends CI_Model {
             $this->db->where($params);
             return $this->db->get('boleta_int')->result_array();
         }
+
 
          /*
      * function to add new internamiento

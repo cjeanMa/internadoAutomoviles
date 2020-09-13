@@ -10,6 +10,7 @@ class Internamiento extends CI_Controller
     {
         parent::__construct();
         $this->load->model('Internamiento_Model');
+        $this->load->model('ActaLevante_Model');
         $this->load->library('upload');
         $this->load->library('email');
         $this->load->helper('file');
@@ -227,8 +228,10 @@ class Internamiento extends CI_Controller
 
     public function internadoSalida()
     {
+
         $autorizados = [1, 2, 3];
         $aux = $this->autorizacion_session($autorizados);
+        /* En caso sea un usuario con credenciales */
         if ($aux !== false) {
             if (isset($_POST) && count($_POST) > 0) {
                 $placa = $this->input->post('placa');
@@ -251,7 +254,6 @@ class Internamiento extends CI_Controller
                     $params = array(
                         'fch_sal' => date('Y-m-d'),
                         'path' => $getBoletaObservada['placa'] . "-" . $getBoletaObservada['cod_boleta'],
-                        'user_salida' => $this->session->userdata('user'),
                         'user_verificacion' => NULL,
                         'obs_verificacion' => NULL,
                     );
@@ -271,8 +273,45 @@ class Internamiento extends CI_Controller
                 $data['_view'] = "internamiento/salida";
                 $this->load->view('layouts/main', $data);
             }
-        } else
-            redirect('admin');
+        }
+        /* En caso sea una persona natural */ else {
+            if (isset($_POST) && count($_POST) > 0) {
+                $placa = $this->input->post('placa');
+                $getBoleta = $this->Internamiento_Model->get_internamiento_placa($placa);
+                $getBoletaObservada = $this->Internamiento_Model->get_internamiento_placa_observado($placa);
+                if ($getBoleta) {
+                    $params = array(
+                        'fch_sal' => date('Y-m-d'),
+                        'path' => $getBoleta['placa'] . "-" . $getBoleta['cod_boleta'],
+                    );
+                    $this->subirImagen($getBoleta['cod_boleta'], $getBoleta['placa']);
+                    $this->Internamiento_Model->update_internamiento($getBoleta['cod_boleta'], $params);
+
+                    $data['confirmacion'] = true;
+                    $data['nameDoc'] = $getBoleta['placa'] . "-" . $getBoleta['cod_boleta'];
+                    $this->load->view('internamiento/confirmSalida_guest', $data);
+                } else if ($getBoletaObservada) {
+                    $params = array(
+                        'fch_sal' => date('Y-m-d'),
+                        'path' => $getBoletaObservada['placa'] . "-" . $getBoletaObservada['cod_boleta'],
+                        'user_verificacion' => NULL,
+                        'obs_verificacion' => NULL,
+                    );
+                    $this->subirImagen($getBoletaObservada['cod_boleta'], $getBoletaObservada['placa']);
+                    $this->Internamiento_Model->update_internamiento($getBoletaObservada['cod_boleta'], $params);
+
+                    $data['confirmacion'] = true;
+                    $data['nameDoc'] = $getBoletaObservada['placa'] . "-" . $getBoletaObservada['cod_boleta'];
+                    $this->load->view('internamiento/confirmSalida_guest', $data);
+                } else {
+                    $data['confirmacion'] = false;
+                    $this->load->view('internamiento/confirmSalida_guest', $data);
+                }
+            } else {
+                $data['javascript'] = array('internamiento/salida.js');
+                $this->load->view('internamiento/salida_guest', $data);
+            }
+        }
     }
 
 
@@ -352,6 +391,22 @@ class Internamiento extends CI_Controller
     }
 
     /**
+     * Funcion para visualizar los vehiculos que necesitan revision de documentos
+     */
+    public function ListaVerificados()
+    {
+        $autorizados = [1, 2];
+        $aux = $this->autorizacion_session($autorizados);
+        if ($aux !== false) {
+            $data['internados'] = $this->Internamiento_Model->get_internamientos_observados();
+            $data['_view'] = "internamiento/verificados";
+            $data['javascript'] = array('internamiento/verificados.js');
+            $this->load->view('layouts/main', $data);
+        } else
+            redirect('admin');
+    }
+
+    /**
      * Funcion para visualizar todos los vehiculos que fueron internados, que estan en proceso de salida, o ya salieron
      */
     public function allInternamiento()
@@ -404,36 +459,79 @@ class Internamiento extends CI_Controller
                 $data['_view'] = "internamiento/denegar";
                 $this->load->view('layouts/main', $data);
             }
-        }
-        else
-        redirect('admin');
+        } else
+            redirect('admin');
     }
 
     /**
      * Funcion para confirmar la validez de los documentos subidos para salida de un vehiculo
      */
-    public function verificado($idDoc)
+    public function verificado($id)
     {
-        $autorizados = [1,2];
+        $autorizados = [1, 2];
         $aux = $this->autorizacion_session($autorizados);
-        if($aux !== false){
-            $params = array(
-                'verificacion' => 1,
-                'user_verificacion' => $this->session->userdata('user')
-            );
-            $this->Internamiento_Model->update_internamiento($idDoc, $params);
-            redirect('internamiento/verificacionSalida');
+        if ($aux !== false) {
+            if (isset($_POST) && count($_POST) > 0) {
+                $params = $this->input->post();
+                /* $params = array(
+                    'verificacion' => 1,
+                    'user_verificacion' => $this->session->userdata('user')
+                ); */
+                $idActa = $this->ActaLevante_Model->add_acta($params);
+                $params = array(
+                    'verificacion' => 1,
+                    'user_verificacion' => $this->session->userdata('user'),
+                    'idActaControl' => $idActa,
+                    'fch_sal' => date('Y-m-d'),
+                );
+                $this->Internamiento_Model->update_internamiento($id, $params);
+
+                $data['internado'] = $this->Internamiento_Model->get_internamiento_id($id);
+                $data['_view'] = "internamiento/confirmarVerificacion";
+                $this->load->view("layouts/main", $data);
+            } else {
+                $data['internado'] = $this->Internamiento_Model->get_internamiento_id($id);
+                $data['javascript'] = array();
+                $data['_view'] = "internamiento/FormVerificado";
+                $this->load->view("layouts/main", $data);
+            }
         } else {
             redirect('admin');
         }
     }
 
+    public function viewActa($idBoleta)
+    {
+        $autorizados = [1, 2, 3];
+        $aux = $this->autorizacion_session($autorizados);
+        if ($aux !== false) {
+            $internamiento = $this->Internamiento_Model->get_internamiento_id($idBoleta);
+            $acta = $this->ActaLevante_Model->get_acta($internamiento['idActaControl']);
+            $this->load->helper('fpdf_helper');            
+            if($internamiento['verificacion'] == 1){
+            fpdf();
+            $pdf = new CellPDF();
+            $pdf->SetMargins(12, 10);
+            $pdf->AddPage();
+            $this->cabeceraActa($pdf, $acta); //Cabecera de boleta
+            $pdf->SetFont('helvetica', 'B', 16);
+            $this->cuerpoActa($pdf, $acta, $internamiento);
+            $pdf->Output();
+            }
+            else{
+                $data['_view'] = 'internamiento/negacionActaView';
+                $this->load->view('layouts/main', $data);
+            }
+        } else
+            redirect('admin');
+    }
+
 
     public function internadoPDF($id)
     {
-        $autorizados = [1,2,3];
+        $autorizados = [1, 2, 3];
         $aux = $this->autorizacion_session($autorizados);
-        if($aux !== false){
+        if ($aux !== false) {
             $this->load->helper('fpdf_helper');
             $datos = $this->Internamiento_Model->get_internamiento_id($id);
             fpdf();
@@ -751,5 +849,235 @@ class Internamiento extends CI_Controller
         $pdf->SetFont('zapfdingbats', 'B', 11);
         $pdf->Cell(10, 6, $datos['rev_tecnica'] == 1 ? "4" : "8", 1, 1, 'C');
         $pdf->SetFont('helvetica', 'B', 11);
+    }
+
+    /* funciones para dibujar el pdf de acta de Control */
+    protected function cabeceraActa($pdf, $acta)
+    {
+        $pdf->Image(base_url('assets/own/img/logo-muni.png'), 8, 10, 40, 30);
+        /* preimera linea */
+        $pdf->SetFont('helvetica', 'B', 12);
+        $pdf->Cell(30, 10, ""); //espaciado
+        $pdf->Cell(63, 10, "MUNICIPALIDAD PROVINCIAL DE PUNO", 0, 0, 'C');
+        $pdf->SetFont('helvetica', '', 20);
+        $pdf->Cell(90, 10, "ACTA DE CONTROL", 0, 1, 'C');
+
+        /* segunda linea */
+        $pdf->SetFont('helvetica', 'B', 12);
+        $pdf->Cell(30, 6, ""); //espaciado
+        $pdf->Cell(63, 6, "GERENCIA DE TRANSPORTES Y SEGURIDAD VIAL", 0, 0, 'J', 0);
+        $pdf->SetFont('helvetica', '', 20);
+        $pdf->Cell(90, 6, utf8_decode("Nº " . $acta['idActaControl']), 0, 1, 'C');
+
+        /* tercera linea    */
+        $pdf->SetFont('helvetica', '', 10);
+        $pdf->Cell(93, 5, ""); //espaciado
+        $pdf->Cell(90, 5, utf8_decode("Reglamento Nacional de Administración de Transporte"), 0, 1, 'C');
+
+        /* cuarta linea */
+        $pdf->Cell(93, 5, ""); //espaciado
+        $pdf->Cell(90, 5, utf8_decode("D.S. Nº 017 - 2009 - MTC"), 0, 1, 'C');
+
+        /* para dibujar los cuadros */
+        $pdf->Rect(15, 10, 90, 30);
+        $pdf->Rect(105, 10, 90, 30);
+    }
+
+    protected function cuerpoActa($pdf, $acta, $internamiento)
+    {
+        $this->datosInfractor($pdf, $acta, $internamiento);
+        $this->datosVehiculo($pdf, $acta, $internamiento);
+        $this->datosAutoridad($pdf, $acta, $internamiento);
+    }
+
+    protected function datosInfractor($pdf, $acta, $internamiento)
+    { 
+        $pdf->SetFillColor(200, 200, 200);
+        $pdf->Ln(10);
+        $pdf->SetFont('helvetica', 'b', 14);
+        $pdf->Cell(185, 9, "DATOS DEL INFRACTOR", 1, 1, 'L', 1);
+        $pdf->SetFont('helvetica', 'b', 10);
+        /* primera linea  */
+        $pdf->Cell(40, 8, "Licencia de ", 'TLR', 0, 'L');
+        $pdf->SetFont('helvetica', '', 10);
+        $pdf->Cell(80, 8, $internamiento['nro_licencia'], 1, 0, 'C');
+        $pdf->SetFont('helvetica', 'b', 10);
+        $pdf->Cell(30, 8, "Clase :", 1, 0, 'L');
+        $pdf->SetFont('helvetica', '', 10);
+        $pdf->Cell(35, 8, $internamiento['clase'], 1, 1, 'C');
+
+        /* segunda fila */
+        $pdf->SetFont('helvetica', 'b', 10);
+        $pdf->Cell(40, 8, "Conducir : ", 'BLR', 0, 'L');
+        $pdf->SetFont('helvetica', '', 10);
+        $pdf->Cell(30, 8, "Nacional", 'B', 0, 'C');
+        $pdf->Cell(30, 8, "Militar", 'B', 0, 'C');
+        $pdf->Cell(30, 8, "Extranjera", 'B', 0, 'C');
+        $pdf->Cell(30, 8, "Otros", 'B', 0, 'C');
+        $pdf->Cell(25, 8, "", 'BR', 1);
+
+        /* tercera fila */
+        $pdf->SetFont('helvetica', 'b', 10);
+        $pdf->Cell(40, 8, "Doc. Identidad:", 1, 0, 'L');
+        $pdf->SetFont('helvetica', '', 10);
+        $pdf->Cell(145, 8, $acta['dni'], 1, 1, 'C');
+
+        /* cuarta, quinta fila */
+        $pdf->SetFont('helvetica', 'b', 10);
+        $pdf->Cell(40, 8, "Nombre Completo:", 1, 0, 'L');
+        $pdf->SetFont('helvetica', '', 10);
+        $pdf->Cell(145, 8, $internamiento['chofer'], 1, 1, 'C');
+
+        $pdf->SetFont('helvetica', 'b', 10);
+        $pdf->Cell(40, 8, "Domicilio del", 'LR', 0, 'L');
+        $pdf->SetFont('helvetica', '', 10);
+        $pdf->Cell(145, 8, $acta['domicilioInfractor'], 1, 1, 'C');
+
+        /* sexta fila */
+        $pdf->SetFont('helvetica', 'b', 10);
+        $pdf->Cell(40, 8, " Infractor: ", 'LRB', 0, 'L');
+        $pdf->SetFont('helvetica', '', 10);
+        $pdf->Cell(50, 8, utf8_decode("Distrito : " . $acta['distrito']), 'B', 0, 'L');
+        $pdf->Cell(45, 8, utf8_decode("Provincia : " . $acta['provincia']), 'B', 0, 'L');
+        $pdf->Cell(50, 8, utf8_decode("Departamento : " . $acta['departamento']), 'BR', 1, 'L');
+    }
+
+    protected function datosVehiculo($pdf, $acta, $internamiento)
+    {
+        $pdf->SetFillColor(200, 200, 200);
+        $pdf->Ln(2);
+        $pdf->SetFont('helvetica', 'b', 14);
+        $pdf->Cell(95, 9, "DATOS DEL VEHICULO", 1, 0, 'L', 1);
+        $pdf->Cell(90, 9, "DATOS DE LA INFRACCION", 1, 1, 'L', 1);
+        $pdf->SetFont('helvetica', 'b', 10);
+        /* primera linea  */
+        $pdf->Cell(40, 8, utf8_decode("Nº Placa Unica Nacional:"), 1, 0, 'L');
+        $pdf->SetFont('helvetica', '', 10);
+        $pdf->Cell(55, 8, strtoupper($internamiento['placa']), 1, 0, 'C');
+        $pdf->SetFont('helvetica', 'b', 10);
+        $pdf->Cell(30, 8, utf8_decode("Código Infracción :"), 1, 0, 'L');
+        $pdf->SetFont('helvetica', '', 10);
+        $pdf->Cell(60, 8, $internamiento['infraccion'], 1, 1, 'C');
+
+        /* segunda linea */
+        $pdf->SetFont('helvetica', 'b', 10);
+        $pdf->Cell(40, 8, utf8_decode("Oficina Registral:"), 1, 0, 'L');
+        $pdf->SetFont('helvetica', '', 10);
+        $pdf->Cell(55, 8, utf8_decode($acta['oficinaRegistral']), 1, 0, 'C');
+        $pdf->SetFont('helvetica', 'b', 10);
+        $pdf->Cell(30, 8, utf8_decode("O.M. Nº :"), 1, 0, 'L');
+        $pdf->SetFont('helvetica', '', 10);
+        $pdf->Cell(60, 8, "", 1, 1, 'C');
+
+        /* tercera linea */
+        $pdf->SetFont('helvetica', 'b', 10);
+        $pdf->Cell(40, 8, utf8_decode("Nº Tarj. Propiedad:"), 1, 0, 'L');
+        $pdf->SetFont('helvetica', '', 10);
+        $pdf->Cell(55, 8, utf8_decode($acta['tarjetaPropiedad']), 1, 0, 'C');
+        $pdf->SetFont('helvetica', 'b', 10);
+        $pdf->Cell(30, 8, utf8_decode("Fecha:"), 1, 0, 'L');
+        $pdf->SetFont('helvetica', '', 10);
+        $pdf->Cell(60, 8, $internamiento['fch_sal'], 1, 1, 'C');
+
+        /* cuarta linea */
+        $pdf->SetFont('helvetica', 'b', 10);
+        $pdf->Cell(40, 8, utf8_decode("Marca:"), 1, 0, 'L');
+        $pdf->SetFont('helvetica', '', 10);
+        $pdf->Cell(55, 8, utf8_decode($internamiento['marca']), 1, 0, 'C');
+        $pdf->SetFont('helvetica', 'b', 10);
+        $pdf->Cell(30, 8, utf8_decode("Lugar"), 1, 0, 'L');
+        $pdf->SetFont('helvetica', '', 10);
+        $pdf->Cell(60, 8, utf8_decode($acta['lugarInfraccion']), 1, 1, 'C');
+
+        /* quinta linea */
+        $pdf->SetFont('helvetica', 'b', 10);
+        $pdf->Cell(40, 8, utf8_decode("Razon Social:"), 1, 0, 'L');
+        $pdf->SetFont('helvetica', '', 10);
+        $pdf->Cell(55, 8, utf8_decode($acta['razonSocial']), 1, 0, 'C');
+        $pdf->SetFont('helvetica', 'b', 10);
+        $pdf->Cell(30, 8, utf8_decode("Distrito"), 1, 0, 'L');
+        $pdf->SetFont('helvetica', '', 10);
+        $pdf->Cell(60, 8, utf8_decode($acta['distritoInfraccion']), 1, 1, 'C');
+
+        /* quinta linea */
+        $pdf->SetFont('helvetica', 'b', 10);
+        $pdf->Cell(40, 8, utf8_decode("Tipo Servicio:"), 1, 0, 'L');
+        $pdf->SetFont('helvetica', '', 10);
+        $pdf->Cell(55, 8, utf8_decode($acta['tipoServicio']), 1, 0, 'C');
+        $pdf->SetFont('helvetica', 'b', 10);
+        $pdf->Cell(90, 8, utf8_decode(""), 1, 1, 'L');
+
+        /* quinta linea */
+        $pdf->SetFont('helvetica', 'b', 10);
+        $pdf->Cell(40, 8, utf8_decode("Medida Preventiva:"), 1, 0, 'L');
+        $pdf->SetFont('helvetica', '', 10);
+        $pdf->Cell(145, 8, utf8_decode($acta['medidaPreventiva']), 1, 1, 'C');
+
+        /* sexta linea */
+        $pdf->SetFont('helvetica', 'b', 10);
+        $pdf->Cell(40, 20, utf8_decode("Observaciones IMT:"), 1, 0, 'L');
+        $pdf->SetFont('helvetica', '', 10);
+        $pdf->Cell(145, 20, utf8_decode($acta['observacionIMT']), 1, 1, 'C');
+
+        /* septima linea */
+        $pdf->SetFont('helvetica', 'b', 10);
+        $pdf->Cell(40, 15, utf8_decode("Observaciones del Infractor:"), 1, 0, 'L');
+        $pdf->SetFont('helvetica', '', 10);
+        $pdf->Cell(145, 15, utf8_decode($internamiento['obs']), 1, 1, 'C');
+    }
+
+    protected function datosAutoridad($pdf, $acta, $internamiento)
+    {
+        $pdf->SetFillColor(200, 200, 200);
+        $pdf->Ln(2);
+        $pdf->SetFont('helvetica', 'b', 14);
+        $pdf->Cell(95, 9, "AUTORIDAD QUE LEVANTA EL ACTA", 1, 0, 'L', 1);
+        $pdf->Cell(90, 9, "DATOS DEL TESTIGO", 1, 1, 'L', 1);
+        /* Primera linea */
+        $pdf->SetFont('helvetica', 'b', 10);
+        $pdf->Cell(40, 8, utf8_decode("Apellido Paterno:"), 1, 0, 'L');
+        $pdf->SetFont('helvetica', '', 10);
+        $pdf->Cell(55, 8, utf8_decode($acta['apAutoridad']), 1, 0, 'C');
+        $pdf->SetFont('helvetica', 'b', 10);
+        $pdf->Cell(30, 8, utf8_decode("Apellido Paterno:"), 1, 0, 'L');
+        $pdf->SetFont('helvetica', '', 10);
+        $pdf->Cell(60, 8, utf8_decode($acta['apTestigo']), 1, 1, 'C');
+
+        /* Segunda linea */
+        $pdf->SetFont('helvetica', 'b', 10);
+        $pdf->Cell(40, 8, utf8_decode("Apellido Materno:"), 1, 0, 'L');
+        $pdf->SetFont('helvetica', '', 10);
+        $pdf->Cell(55, 8, utf8_decode($acta['amAutoridad']), 1, 0, 'C');
+        $pdf->SetFont('helvetica', 'b', 10);
+        $pdf->Cell(30, 8, utf8_decode("Apellido Materno:"), 1, 0, 'L');
+        $pdf->SetFont('helvetica', '', 10);
+        $pdf->Cell(60, 8, utf8_decode($acta['amTestigo']), 1, 1, 'C');
+
+         /* Tercera linea */
+         $pdf->SetFont('helvetica', 'b', 10);
+         $pdf->Cell(40, 8, utf8_decode("Nombres:"), 1, 0, 'L');
+         $pdf->SetFont('helvetica', '', 10);
+         $pdf->Cell(55, 8, utf8_decode($acta['nombreAutoridad']), 1, 0, 'C');
+         $pdf->SetFont('helvetica', 'b', 10);
+         $pdf->Cell(30, 8, utf8_decode("Nombres:"), 1, 0, 'L');
+         $pdf->SetFont('helvetica', '', 10);
+         $pdf->Cell(60, 8, utf8_decode($acta['nombreTestigo']), 1, 1, 'C');
+
+          /* Cuarta linea */
+          $pdf->SetFont('helvetica', 'b', 10);
+          $pdf->Cell(40, 8, utf8_decode("Prueba de Testigo:"), 1, 0, 'L');
+          $pdf->SetFont('helvetica', '', 10);
+          $pdf->Cell(145, 8, utf8_decode($acta['pruebaTestigo']), 1, 1, 'C');
+
+          /* Quinta linea */
+          $pdf->Cell(60, 20, "", 1, 0, 'L');
+          $pdf->Cell(65, 20, "", 1, 0, 'L');
+          $pdf->Cell(60, 20, "", 1, 1, 'C');
+
+          /* Sexta linea */
+          $pdf->Cell(60, 7, "FIRMA DEL I.M.T.", 1, 0, 'C');
+          $pdf->Cell(65, 7, "FIRMA DEL INFRACTOR", 1, 0, 'C');
+          $pdf->Cell(60, 7, "FIRMA DEL TESTIGO", 1, 1, 'C');
+         
     }
 }

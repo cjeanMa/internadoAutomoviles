@@ -1,4 +1,4 @@
-/* let captcha = false;
+let captcha = false;
 
 function captchaConfirm() {
     captcha = true;
@@ -12,4 +12,4 @@ function verificarSubmit() {
     else {
         $('#submit').attr("disabled", true);
     }
-} */
+}

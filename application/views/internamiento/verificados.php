@@ -1,9 +1,7 @@
 <div class="container">
-    <h2 class="text-center">Lista de Vehiculos a Verificar</h2>
-    <div class="col-12" id="tableInternamiento">
-        <a href="<?=base_url('internamiento/ListaVerificados')?>" class="btn btn-warning"> Lista de vehiculos verificados</a>
-        <hr>
-        <table class="table table-responsive table-striped" id="tablaSalidas">
+    <h2 class="text-center">Lista de Vehiculos Verificados</h2>
+    <div class="col-12">
+        <table class="table table-responsive table-striped" id="tablaVerificados">
             <thead>
                 <tr class="text-center table-primary">
                     <th width="10%">Nº Boleta</th>
@@ -25,9 +23,8 @@
                         <td><?= $i['fch_sal'] ?></td>
                         <td><?= $i['user_salida'] ?></td>
                         <td class="text-center">
-                                    <a href="<?= base_url('internamiento/viewPDF/' . $i['path']) ?>" class="text-danger p-1" target="_blank"><i class="fa fa-file-pdf"></i> </a>
-                                    <a href="<?= base_url('internamiento/verificado/' . $i['cod_boleta']) ?>" class="text-primary p-1" alt="Verificar"><i class="fa fa-check"></i> </a>
-                                    <a href="<?= base_url('internamiento/denegarSolicitud/' . $i['cod_boleta']) ?>" class="text-warning p-1" alt="Denegar"><i class="fa fa-window-close"></i> </a>
+                                    <a href="<?= base_url('internamiento/viewPDF/' . $i['path']) ?>" class="text-success p-1" target="_blank"><i class="fa fa-eye"></i> </a>
+                                    <a href="<?= base_url('internamiento/viewActa/'.$i['cod_boleta']) ?>" class="text-danger p-1" alt="Acta PDF"  target="_blank"><i class="fa fa-file-pdf"></i> </a>
                         </td>
                     </tr>
                 <?php } ?>
