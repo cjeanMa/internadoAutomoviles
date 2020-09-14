@@ -12,7 +12,6 @@ class Internamiento extends CI_Controller
         $this->load->model('Internamiento_Model');
         $this->load->model('ActaLevante_Model');
         $this->load->library('upload');
-        $this->load->library('email');
         $this->load->helper('file');
         date_default_timezone_set('America/Lima');
     }
@@ -422,17 +421,48 @@ class Internamiento extends CI_Controller
             redirect('admin');
     }
 
+
+    /* public function test()
+    {
+        $content = "<h1>MUNICIPALIDAD PROVICIAL DE PUNO<h1/>
+                    <h2>GERENCIA DE TRANSPORTES Y SEGURIDAD VIAL<h2/>
+                    <p style='border:1px solid gray; border-radius: 10px; padding:20px>LE INFORMAMOS QUE EL TRAMITO QUE REALIZO PARA EL LEVANTAMIENTO DE SU VEHICULO SE REALIZÓ CORRECTAMENTE<p/>";
+
+        $this->email_test($content, "cjeanma009@gmail.com");
+    } */
+
     /**
      * Funcion prueba de email
      */
-    public function email_test($mensaje, $email)
+    public function sendEmail($motivo, $email, $tipo)
     {
+        $mensaje = "<h1>MUNICIPALIDAD PROVICIAL DE PUNO<h1/>
+                    <h2>GERENCIA DE TRANSPORTES Y SEGURIDAD VIAL<h2/>";
+        $this->load->library('email');
+        $config['mailtype'] = 'html';
+        $this->email->initialize($config);
         //Falta Probar la libreria de mandar mensajes con php codeigniter
         $this->email->to($email);
         $this->email->from($this->emailMunicipalidad);
         $this->email->subject("Aviso sobre salida de su vehiculo internado - Municipalidad Provincial de Puno");
+        switch ($tipo) {
+            case "aceptado":
+                $mensaje += "<p>LE INFORMAMOS QUE EL TRAMITO QUE REALIZO PARA EL LEVANTAMIENTO DE SU VEHICULO SE REALIZÓ CORRECTAMENTE</p>";
+                break;
+            case "denegado":
+                $mensaje += "<p>LE INFORMAMOS QUE EL TRAMITO QUE REALIZO PARA EL LEVANTAMIENTO DE SU VEHICULO NO FUE ACEPTADO, POR EL SIGUIENTE MOTIVO:</p>
+                            <ul><li>".$motivo."<li/><ul/>";
+                break;
+        }
+
         $this->email->message($mensaje);
+        
         $this->email->send();
+        
+        /* if ($this->email->send()) {
+            echo "se envio mensaje";
+        } else
+            $this->email->print_debugger(); */
     }
 
     /**
@@ -450,6 +480,9 @@ class Internamiento extends CI_Controller
                     'obs_verificacion' => $this->input->post('mensajeDenegar'),
                     'verificacion' => 0,
                 );
+                $internamiento = $this->Internamiento_Model->get_internamiento_id($codigo);
+                $this->sendEmail($internamiento["obs_verificacion"], $internamiento['email'], "denegado");
+
                 $this->Internamiento_Model->update_internamiento($codigo, $params);
                 //la funcion Email aun esta en prueba
                 //email_test($internado['obs_verificacion'], $internado['email'])
@@ -478,15 +511,16 @@ class Internamiento extends CI_Controller
                     'user_verificacion' => $this->session->userdata('user')
                 ); */
                 $idActa = $this->ActaLevante_Model->add_acta($params);
-                $params = array(
+                $data_update = array(
                     'verificacion' => 1,
                     'user_verificacion' => $this->session->userdata('user'),
                     'idActaControl' => $idActa,
                     'fch_sal' => date('Y-m-d'),
                 );
-                $this->Internamiento_Model->update_internamiento($id, $params);
-
-                $data['internado'] = $this->Internamiento_Model->get_internamiento_id($id);
+                $this->Internamiento_Model->update_internamiento($id, $data_update);
+                $internamiento = $this->Internamiento_Model->get_internamiento_id($id);
+                $this->sendEmail("", $internamiento['email'], "aceptado");
+                $data['internado'] = $internamiento;
                 $data['_view'] = "internamiento/confirmarVerificacion";
                 $this->load->view("layouts/main", $data);
             } else {
@@ -507,18 +541,17 @@ class Internamiento extends CI_Controller
         if ($aux !== false) {
             $internamiento = $this->Internamiento_Model->get_internamiento_id($idBoleta);
             $acta = $this->ActaLevante_Model->get_acta($internamiento['idActaControl']);
-            $this->load->helper('fpdf_helper');            
-            if($internamiento['verificacion'] == 1){
-            fpdf();
-            $pdf = new CellPDF();
-            $pdf->SetMargins(12, 10);
-            $pdf->AddPage();
-            $this->cabeceraActa($pdf, $acta); //Cabecera de boleta
-            $pdf->SetFont('helvetica', 'B', 16);
-            $this->cuerpoActa($pdf, $acta, $internamiento);
-            $pdf->Output();
-            }
-            else{
+            $this->load->helper('fpdf_helper');
+            if ($internamiento['verificacion'] == 1) {
+                fpdf();
+                $pdf = new CellPDF();
+                $pdf->SetMargins(12, 10);
+                $pdf->AddPage();
+                $this->cabeceraActa($pdf, $acta); //Cabecera de boleta
+                $pdf->SetFont('helvetica', 'B', 16);
+                $this->cuerpoActa($pdf, $acta, $internamiento);
+                $pdf->Output();
+            } else {
                 $data['_view'] = 'internamiento/negacionActaView';
                 $this->load->view('layouts/main', $data);
             }
@@ -891,7 +924,7 @@ class Internamiento extends CI_Controller
     }
 
     protected function datosInfractor($pdf, $acta, $internamiento)
-    { 
+    {
         $pdf->SetFillColor(200, 200, 200);
         $pdf->Ln(10);
         $pdf->SetFont('helvetica', 'b', 14);
@@ -1053,31 +1086,30 @@ class Internamiento extends CI_Controller
         $pdf->SetFont('helvetica', '', 10);
         $pdf->Cell(60, 8, utf8_decode($acta['amTestigo']), 1, 1, 'C');
 
-         /* Tercera linea */
-         $pdf->SetFont('helvetica', 'b', 10);
-         $pdf->Cell(40, 8, utf8_decode("Nombres:"), 1, 0, 'L');
-         $pdf->SetFont('helvetica', '', 10);
-         $pdf->Cell(55, 8, utf8_decode($acta['nombreAutoridad']), 1, 0, 'C');
-         $pdf->SetFont('helvetica', 'b', 10);
-         $pdf->Cell(30, 8, utf8_decode("Nombres:"), 1, 0, 'L');
-         $pdf->SetFont('helvetica', '', 10);
-         $pdf->Cell(60, 8, utf8_decode($acta['nombreTestigo']), 1, 1, 'C');
+        /* Tercera linea */
+        $pdf->SetFont('helvetica', 'b', 10);
+        $pdf->Cell(40, 8, utf8_decode("Nombres:"), 1, 0, 'L');
+        $pdf->SetFont('helvetica', '', 10);
+        $pdf->Cell(55, 8, utf8_decode($acta['nombreAutoridad']), 1, 0, 'C');
+        $pdf->SetFont('helvetica', 'b', 10);
+        $pdf->Cell(30, 8, utf8_decode("Nombres:"), 1, 0, 'L');
+        $pdf->SetFont('helvetica', '', 10);
+        $pdf->Cell(60, 8, utf8_decode($acta['nombreTestigo']), 1, 1, 'C');
 
-          /* Cuarta linea */
-          $pdf->SetFont('helvetica', 'b', 10);
-          $pdf->Cell(40, 8, utf8_decode("Prueba de Testigo:"), 1, 0, 'L');
-          $pdf->SetFont('helvetica', '', 10);
-          $pdf->Cell(145, 8, utf8_decode($acta['pruebaTestigo']), 1, 1, 'C');
+        /* Cuarta linea */
+        $pdf->SetFont('helvetica', 'b', 10);
+        $pdf->Cell(40, 8, utf8_decode("Prueba de Testigo:"), 1, 0, 'L');
+        $pdf->SetFont('helvetica', '', 10);
+        $pdf->Cell(145, 8, utf8_decode($acta['pruebaTestigo']), 1, 1, 'C');
 
-          /* Quinta linea */
-          $pdf->Cell(60, 20, "", 1, 0, 'L');
-          $pdf->Cell(65, 20, "", 1, 0, 'L');
-          $pdf->Cell(60, 20, "", 1, 1, 'C');
+        /* Quinta linea */
+        $pdf->Cell(60, 20, "", 1, 0, 'L');
+        $pdf->Cell(65, 20, "", 1, 0, 'L');
+        $pdf->Cell(60, 20, "", 1, 1, 'C');
 
-          /* Sexta linea */
-          $pdf->Cell(60, 7, "FIRMA DEL I.M.T.", 1, 0, 'C');
-          $pdf->Cell(65, 7, "FIRMA DEL INFRACTOR", 1, 0, 'C');
-          $pdf->Cell(60, 7, "FIRMA DEL TESTIGO", 1, 1, 'C');
-         
+        /* Sexta linea */
+        $pdf->Cell(60, 7, "FIRMA DEL I.M.T.", 1, 0, 'C');
+        $pdf->Cell(65, 7, "FIRMA DEL INFRACTOR", 1, 0, 'C');
+        $pdf->Cell(60, 7, "FIRMA DEL TESTIGO", 1, 1, 'C');
     }
 }
