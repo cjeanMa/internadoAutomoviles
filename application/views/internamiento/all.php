@@ -25,9 +25,10 @@
                         <td><?=$i['oficial']?></td>
                         <td><?=$i['fch_ing']?></td>
                         <td class="text-center">
-                            <a href="<?=base_url('internamiento/edit/'.$i['cod_boleta'])?>" style="color:orange"><i class="fa fa-edit"></i> </a>
                             <a href="<?=base_url('internamiento/internadoPDF/'.$i['cod_boleta'])?>" style="color:red" target="_blank"><i class="fa fa-file-pdf"></i> </a>
-                            <a href="<?=base_url('internamiento/internadoSalida/'.$i['cod_boleta'])?>" target="_blank"><i class="fa fa-view"></i> </a>
+                                <?php if($i['path']){?>
+                            <a href="<?=base_url('internamiento/viewPDF/'.$i['path'])?>" style="color:blue" target="_blank"><i class="fa fa-file-pdf"></i> </a>
+                                <?php }?>
                         </td>
                     </tr>
                 <?php } ?>

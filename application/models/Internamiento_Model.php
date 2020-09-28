@@ -26,6 +26,7 @@ class Internamiento_Model extends CI_Model {
             return $this->db->get('boleta_int')->row_array();
         }
 
+
         //Fucnion para busca internado por cod_boleta
         function get_internamiento_id($id){
             $this->db->where('cod_boleta', $id);
@@ -52,9 +53,74 @@ class Internamiento_Model extends CI_Model {
 
         function get_internamientos_salida(){
             $params = array(
-                'fch_sal !=' => NULL,
                 'verificacion'=> 0,
+                'verSubGerente' => 0,
+                'verGerente' => 0,
                 'obs_verificacion'=>NULL,
+                'path !='=>NULL
+            );
+            $this->db->order_by('cod_boleta','desc');
+            $this->db->where($params);
+            return $this->db->get('boleta_int')->result_array();
+        }
+
+        function get_internamientos_primera_verificacion(){
+            $params = array(
+                'verificacion'=> 1,
+                'verSubGerente' => 0,
+                'verGerente' => 0,
+                'obs_verificacion'=>NULL,
+            );
+            $this->db->order_by('cod_boleta','desc');
+            $this->db->where($params);
+            return $this->db->get('boleta_int')->result_array();
+        }
+
+        function get_internamientos_segunda_verificacion(){
+            $params = array(
+                'verificacion'=> 1,
+                'verSubGerente' => 1,
+                'verGerente' => 0,
+                'obs_verificacion'=>NULL,
+            );
+            $this->db->order_by('cod_boleta','desc');
+            $this->db->where($params);
+            return $this->db->get('boleta_int')->result_array();
+        }
+
+        function get_internamientos_verificados_salida(){
+            $params = array(
+                'fch_sal =' => NULL,
+                'verificacion'=> 1,
+                'idActaControl' => 0
+            );
+            $this->db->order_by('cod_boleta','desc');
+            $this->db->where($params);
+            return $this->db->get('boleta_int')->result_array();
+        }
+
+        function get_internamientos_finalizados(){
+            $params = array(
+                'verificacion'=> 1,
+                'verSubGerente' => 1,
+                'verGerente' => 1,
+                'obs_verificacion'=>NULL,
+                'idActaControl !=' => NULL,
+
+            );
+            $this->db->order_by('cod_boleta','desc');
+            $this->db->where($params);
+            return $this->db->get('boleta_int')->result_array();
+        }
+
+        function get_internamientos_autorizados(){
+            $params = array(
+                'verificacion'=> 1,
+                'verSubGerente' => 1,
+                'verGerente' => 1,
+                'obs_verificacion'=>NULL,
+                'idActaControl' => NULL
+
             );
             $this->db->order_by('cod_boleta','desc');
             $this->db->where($params);
@@ -65,7 +131,7 @@ class Internamiento_Model extends CI_Model {
         function get_internamientos_observados(){
             $params = array(
                 'user_verificacion !=' => NULL,
-                'idActaControl !=' => NULL,
+                'idActaControl =' => NULL,
                 'verificacion'=> 1,
             );
             $this->db->order_by('cod_boleta','desc');

@@ -1,7 +1,7 @@
 <div class="container">
     <h2 class="text-center">Datos para el acta de control</h2>
 
-    <form action="<?= base_url('internamiento/verificado/' . $internado['cod_boleta']) ?>" method="POST" class="group-form">
+    <form action="<?= base_url('internamiento/controlSalida/' . $internado['cod_boleta']) ?>" method="POST" class="group-form">
 
         <h5>DATOS DEL INFRACTOR</h5>
         <hr>
@@ -13,7 +13,7 @@
 
             <div class="col-sm-12 col-md-4 form-group">
                 <label for="dni">Doc. Identidad (Infractor):</label>
-                <input type="text" name="dni" id="dni" class="form-control">
+                <input type="text" name="dni" id="dni" maxlength="8" class="form-control" required>
             </div>
 
             <div class="col-sm-12 col-md-4 form-group">

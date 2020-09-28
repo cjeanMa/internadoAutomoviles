@@ -18,7 +18,7 @@ class Internamiento extends CI_Controller
 
     public function index()
     {
-        $autorizados = [1, 2, 3];
+        $autorizados = [1, 2, 4];
         $aux = $this->autorizacion_session($autorizados);
         if ($aux !== false) {
             $data['internados'] = $this->Internamiento_Model->get_internamientos_nuevos();
@@ -43,7 +43,7 @@ class Internamiento extends CI_Controller
 
     public function add()
     {
-        $autorizados = [1, 2, 3];
+        $autorizados = [1, 2, 4];
         $aux = $this->autorizacion_session($autorizados);
         if ($aux !== false) {
             if (isset($_POST) && count($_POST) > 0) {
@@ -125,7 +125,7 @@ class Internamiento extends CI_Controller
 
     public function edit($cod_boleta)
     {
-        $autorizados = [1, 2, 3];
+        $autorizados = [1, 2, 4];
         $aux = $this->autorizacion_session($autorizados);
         if ($aux !== false) {
             if (isset($_POST) && count($_POST) > 0) {
@@ -210,7 +210,7 @@ class Internamiento extends CI_Controller
 
     public function observados()
     {
-        $autorizados = [1, 2, 3];
+        $autorizados = [1, 2, 4];
         $aux = $this->autorizacion_session($autorizados);
         if ($aux !== false) {
             $data['internados'] = $this->Internamiento_Model->get_internamientos_observados();
@@ -228,7 +228,7 @@ class Internamiento extends CI_Controller
     public function internadoSalida()
     {
 
-        $autorizados = [1, 2, 3];
+        $autorizados = [1, 2, 3, 4, 5];
         $aux = $this->autorizacion_session($autorizados);
         /* En caso sea un usuario con credenciales */
         if ($aux !== false) {
@@ -354,11 +354,11 @@ class Internamiento extends CI_Controller
     }
 
     /*
-    *   Funcion para visualizar los documentos pdf
+    *   Funcion para visualizar los documentos pdf subidos por el interesado en la salida
      */
     public function viewPDF($nomDoc)
     {
-        $autorizados = [1, 2, 3];
+        $autorizados = [1, 2, 3, 5];
         $aux = $this->autorizacion_session($autorizados);
         if ($aux !== false) {
             $this->load->helper('download');
@@ -378,12 +378,43 @@ class Internamiento extends CI_Controller
      */
     public function verificacionSalida()
     {
-        $autorizados = [1, 2];
+        $autorizados = [1, 2, 3, 5];
         $aux = $this->autorizacion_session($autorizados);
         if ($aux !== false) {
-            $data['internados'] = $this->Internamiento_Model->get_internamientos_salida();
-            $data['_view'] = "internamiento/verificacion";
-            $data['javascript'] = array('internamiento/verificacionSalida.js');
+            if($this->session->userdata('tipoUsuario')==5){
+                $data['internados'] = $this->Internamiento_Model->get_internamientos_salida();
+                $data['_view'] = "internamiento/verificacion";
+                $data['javascript'] = array('internamiento/verificacionSalida.js');
+                $this->load->view('layouts/main', $data);
+            }
+            else if($this->session->userdata('tipoUsuario')==3){
+                $data['internados'] = $this->Internamiento_Model->get_internamientos_primera_verificacion();
+                $data['_view'] = "internamiento/verificacionSubGerente";
+                $data['javascript'] = array('internamiento/verificacionSalida.js');
+                $this->load->view('layouts/main', $data);
+            }
+            else if($this->session->userdata('tipoUsuario')==2){
+                $data['internados'] = $this->Internamiento_Model->get_internamientos_segunda_verificacion();
+                $data['_view'] = "internamiento/verificacionGerente";
+                $data['javascript'] = array('internamiento/verificacionSalida.js');
+                $this->load->view('layouts/main', $data);
+            }
+           
+        } else
+            redirect('admin');
+    }
+
+    /**
+     * Funcion para visualizar los vehiculos que ya pasaron por los procesos de autorizacion
+     */
+    public function listaVerificadosSalida()
+    {
+        $autorizados = [6];
+        $aux = $this->autorizacion_session($autorizados);
+        if ($aux !== false) {
+            $data['internados'] = $this->Internamiento_Model->get_internamientos_verificados_salida();
+            $data['_view'] = "internamiento/verificadosSalida.php";
+            $data['javascript'] = array('internamiento/verificadosSalida.js');
             $this->load->view('layouts/main', $data);
         } else
             redirect('admin');
@@ -392,13 +423,26 @@ class Internamiento extends CI_Controller
     /**
      * Funcion para visualizar los vehiculos que necesitan revision de documentos
      */
-    public function ListaVerificados()
+    public function listaVerificados()
     {
         $autorizados = [1, 2];
         $aux = $this->autorizacion_session($autorizados);
         if ($aux !== false) {
             $data['internados'] = $this->Internamiento_Model->get_internamientos_observados();
             $data['_view'] = "internamiento/verificados";
+            $data['javascript'] = array('internamiento/verificados.js');
+            $this->load->view('layouts/main', $data);
+        } else
+            redirect('admin');
+    }
+
+
+    public function listaVehiculosAutorizados(){
+        $autorizados = [1, 6];
+        $aux = $this->autorizacion_session($autorizados);
+        if ($aux !== false) {
+            $data['internados'] = $this->Internamiento_Model->get_internamientos_autorizados();
+            $data['_view'] = "internamiento/vehiculosAutorizados";
             $data['javascript'] = array('internamiento/verificados.js');
             $this->load->view('layouts/main', $data);
         } else
@@ -421,6 +465,21 @@ class Internamiento extends CI_Controller
             redirect('admin');
     }
 
+        /**
+     * Funcion para visualizar los vehiculos que ya pasaron por los procesos de autorizacion
+     */
+    public function listaActas()
+    {
+        $autorizados = [6];
+        $aux = $this->autorizacion_session($autorizados);
+        if ($aux !== false) {
+            $data['internados'] = $this->Internamiento_Model->get_internamientos_finalizados();
+            $data['_view'] = "internamiento/listaActasControl.php";
+            $data['javascript'] = array('internamiento/verificadosSalida.js');
+            $this->load->view('layouts/main', $data);
+        } else
+            redirect('admin');
+    }
 
     /* public function test()
     {
@@ -447,10 +506,10 @@ class Internamiento extends CI_Controller
         $this->email->subject("Aviso sobre salida de su vehiculo internado - Municipalidad Provincial de Puno");
         switch ($tipo) {
             case "aceptado":
-                $mensaje += "<p>LE INFORMAMOS QUE EL TRAMITO QUE REALIZO PARA EL LEVANTAMIENTO DE SU VEHICULO SE REALIZÓ CORRECTAMENTE</p>";
+                $mensaje = $mensaje . "<p>LE INFORMAMOS QUE EL TRAMITO QUE REALIZO PARA EL LEVANTAMIENTO DE SU VEHICULO SE REALIZÓ CORRECTAMENTE</p>";
                 break;
             case "denegado":
-                $mensaje += "<p>LE INFORMAMOS QUE EL TRAMITO QUE REALIZO PARA EL LEVANTAMIENTO DE SU VEHICULO NO FUE ACEPTADO, POR EL SIGUIENTE MOTIVO:</p>
+                $mensaje = $mensaje . "<p>LE INFORMAMOS QUE EL TRAMITO QUE REALIZO PARA EL LEVANTAMIENTO DE SU VEHICULO NO FUE ACEPTADO, POR EL SIGUIENTE MOTIVO:</p>
                             <ul><li>".$motivo."<li/><ul/>";
                 break;
         }
@@ -470,7 +529,7 @@ class Internamiento extends CI_Controller
      */
     public function denegarSolicitud($codigo)
     {
-        $autorizados = [1, 2];
+        $autorizados = [2, 3, 5];
         $aux = $this->autorizacion_session($autorizados);
         if ($aux !== false) {
             if (isset($_POST) && count($_POST) > 0) {
@@ -479,11 +538,12 @@ class Internamiento extends CI_Controller
                     'user_verificacion' => $this->session->userdata('user'),
                     'obs_verificacion' => $this->input->post('mensajeDenegar'),
                     'verificacion' => 0,
+                    'verSubGerente' => 0,
+                    'verGerente' => 0,
                 );
                 $internamiento = $this->Internamiento_Model->get_internamiento_id($codigo);
-                $this->sendEmail($internamiento["obs_verificacion"], $internamiento['email'], "denegado");
-
                 $this->Internamiento_Model->update_internamiento($codigo, $params);
+                $this->sendEmail($internamiento["obs_verificacion"], $internamiento['email'], "denegado");
                 //la funcion Email aun esta en prueba
                 //email_test($internado['obs_verificacion'], $internado['email'])
                 redirect('internamiento/verificacionSalida');
@@ -501,19 +561,54 @@ class Internamiento extends CI_Controller
      */
     public function verificado($id)
     {
-        $autorizados = [1, 2];
+        $autorizados = [2, 3, 5];
+        $aux = $this->autorizacion_session($autorizados);
+        if ($aux !== false) {
+                if($this->session->userdata('tipoUsuario')==5){
+                    $data_update = array(
+                        'verificacion' => 1,
+                        'user_verificacion' => $this->session->userdata('user')
+                    );
+                    $this->Internamiento_Model->update_internamiento($id, $data_update);
+                    redirect('internamiento/verificacionSalida');
+                }
+                else if($this->session->userdata('tipoUsuario')==3){
+                    $data_update = array(
+                        'verSubGerente' => 1,
+                        'user_verSubGerente' => $this->session->userdata('user')
+                    );
+                    $this->Internamiento_Model->update_internamiento($id, $data_update);
+                    redirect('internamiento/verificacionSalida');
+                }
+                else if($this->session->userdata('tipoUsuario')==2){
+                    $data_update = array(
+                        'verGerente' => 1,
+                        'user_verGerente' => $this->session->userdata('user')
+                    );
+                    $this->Internamiento_Model->update_internamiento($id, $data_update);
+                    $internamiento = $this->Internamiento_Model->get_internamiento_id($id);
+                    $this->sendEmail("", $internamiento['email'], "aceptado");
+                    redirect('internamiento/verificacionSalida');
+                }
+        } else {
+            redirect('admin');
+        }
+    }
+
+    /**
+     * Funcion para confirmar la validez de los documentos subidos para salida de un vehiculo
+     */
+    public function controlSalida($id)
+    {
+        $autorizados = [6];
         $aux = $this->autorizacion_session($autorizados);
         if ($aux !== false) {
             if (isset($_POST) && count($_POST) > 0) {
+                /*Los datos post tienen los mismos nombre s de la tabla por eso solo paramos el post a param*/
                 $params = $this->input->post();
-                /* $params = array(
-                    'verificacion' => 1,
-                    'user_verificacion' => $this->session->userdata('user')
-                ); */
                 $idActa = $this->ActaLevante_Model->add_acta($params);
                 $data_update = array(
-                    'verificacion' => 1,
-                    'user_verificacion' => $this->session->userdata('user'),
+                    'user_salida' => $this->session->userdata('user'),
                     'idActaControl' => $idActa,
                     'fch_sal' => date('Y-m-d'),
                 );
@@ -536,7 +631,7 @@ class Internamiento extends CI_Controller
 
     public function viewActa($idBoleta)
     {
-        $autorizados = [1, 2, 3];
+        $autorizados = [1, 2, 6];
         $aux = $this->autorizacion_session($autorizados);
         if ($aux !== false) {
             $internamiento = $this->Internamiento_Model->get_internamiento_id($idBoleta);
@@ -562,7 +657,7 @@ class Internamiento extends CI_Controller
 
     public function internadoPDF($id)
     {
-        $autorizados = [1, 2, 3];
+        $autorizados = [1, 2, 4];
         $aux = $this->autorizacion_session($autorizados);
         if ($aux !== false) {
             $this->load->helper('fpdf_helper');
