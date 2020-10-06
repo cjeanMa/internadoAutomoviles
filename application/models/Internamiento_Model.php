@@ -180,4 +180,23 @@ class Internamiento_Model extends CI_Model {
         return $this->db->delete('boleta_int',array('cod_boleta'=>$boleta));
     }
 
+    function get_fechaEntrada($fInit, $fEnd){
+        $params = array(
+            'fch_ing >=' => $fInit,
+            'fch_ing <=' => $fEnd
+        );
+        $this->db->order_by('fch_ing','asc');
+        $this->db->where($params);
+        return $this->db->get('boleta_int')->result_array();
+    }
+
+    function get_fechaSalida($fInit, $fEnd){
+        $params = array(
+            'fch_sal >=' => $fInit,
+            'fch_sal <=' => $fEnd
+        );
+        $this->db->order_by('fch_sal','asc');
+        $this->db->where($params);
+        return $this->db->get('boleta_int')->result_array();
+    }
 }

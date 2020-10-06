@@ -381,25 +381,22 @@ class Internamiento extends CI_Controller
         $autorizados = [1, 2, 3, 5];
         $aux = $this->autorizacion_session($autorizados);
         if ($aux !== false) {
-            if($this->session->userdata('tipoUsuario')==5){
+            if ($this->session->userdata('tipoUsuario') == 5) {
                 $data['internados'] = $this->Internamiento_Model->get_internamientos_salida();
                 $data['_view'] = "internamiento/verificacion";
                 $data['javascript'] = array('internamiento/verificacionSalida.js');
                 $this->load->view('layouts/main', $data);
-            }
-            else if($this->session->userdata('tipoUsuario')==3){
+            } else if ($this->session->userdata('tipoUsuario') == 3) {
                 $data['internados'] = $this->Internamiento_Model->get_internamientos_primera_verificacion();
                 $data['_view'] = "internamiento/verificacionSubGerente";
                 $data['javascript'] = array('internamiento/verificacionSalida.js');
                 $this->load->view('layouts/main', $data);
-            }
-            else if($this->session->userdata('tipoUsuario')==2){
+            } else if ($this->session->userdata('tipoUsuario') == 2) {
                 $data['internados'] = $this->Internamiento_Model->get_internamientos_segunda_verificacion();
                 $data['_view'] = "internamiento/verificacionGerente";
                 $data['javascript'] = array('internamiento/verificacionSalida.js');
                 $this->load->view('layouts/main', $data);
             }
-           
         } else
             redirect('admin');
     }
@@ -437,7 +434,8 @@ class Internamiento extends CI_Controller
     }
 
 
-    public function listaVehiculosAutorizados(){
+    public function listaVehiculosAutorizados()
+    {
         $autorizados = [1, 6];
         $aux = $this->autorizacion_session($autorizados);
         if ($aux !== false) {
@@ -465,7 +463,7 @@ class Internamiento extends CI_Controller
             redirect('admin');
     }
 
-        /**
+    /**
      * Funcion para visualizar los vehiculos que ya pasaron por los procesos de autorizacion
      */
     public function listaActas()
@@ -510,14 +508,14 @@ class Internamiento extends CI_Controller
                 break;
             case "denegado":
                 $mensaje = $mensaje . "<p>LE INFORMAMOS QUE EL TRAMITO QUE REALIZO PARA EL LEVANTAMIENTO DE SU VEHICULO NO FUE ACEPTADO, POR EL SIGUIENTE MOTIVO:</p>
-                            <ul><li>".$motivo."<li/><ul/>";
+                            <ul><li>" . $motivo . "<li/><ul/>";
                 break;
         }
 
         $this->email->message($mensaje);
-        
+
         $this->email->send();
-        
+
         /* if ($this->email->send()) {
             echo "se envio mensaje";
         } else
@@ -564,32 +562,30 @@ class Internamiento extends CI_Controller
         $autorizados = [2, 3, 5];
         $aux = $this->autorizacion_session($autorizados);
         if ($aux !== false) {
-                if($this->session->userdata('tipoUsuario')==5){
-                    $data_update = array(
-                        'verificacion' => 1,
-                        'user_verificacion' => $this->session->userdata('user')
-                    );
-                    $this->Internamiento_Model->update_internamiento($id, $data_update);
-                    redirect('internamiento/verificacionSalida');
-                }
-                else if($this->session->userdata('tipoUsuario')==3){
-                    $data_update = array(
-                        'verSubGerente' => 1,
-                        'user_verSubGerente' => $this->session->userdata('user')
-                    );
-                    $this->Internamiento_Model->update_internamiento($id, $data_update);
-                    redirect('internamiento/verificacionSalida');
-                }
-                else if($this->session->userdata('tipoUsuario')==2){
-                    $data_update = array(
-                        'verGerente' => 1,
-                        'user_verGerente' => $this->session->userdata('user')
-                    );
-                    $this->Internamiento_Model->update_internamiento($id, $data_update);
-                    $internamiento = $this->Internamiento_Model->get_internamiento_id($id);
-                    $this->sendEmail("", $internamiento['email'], "aceptado");
-                    redirect('internamiento/verificacionSalida');
-                }
+            if ($this->session->userdata('tipoUsuario') == 5) {
+                $data_update = array(
+                    'verificacion' => 1,
+                    'user_verificacion' => $this->session->userdata('user')
+                );
+                $this->Internamiento_Model->update_internamiento($id, $data_update);
+                redirect('internamiento/verificacionSalida');
+            } else if ($this->session->userdata('tipoUsuario') == 3) {
+                $data_update = array(
+                    'verSubGerente' => 1,
+                    'user_verSubGerente' => $this->session->userdata('user')
+                );
+                $this->Internamiento_Model->update_internamiento($id, $data_update);
+                redirect('internamiento/verificacionSalida');
+            } else if ($this->session->userdata('tipoUsuario') == 2) {
+                $data_update = array(
+                    'verGerente' => 1,
+                    'user_verGerente' => $this->session->userdata('user')
+                );
+                $this->Internamiento_Model->update_internamiento($id, $data_update);
+                $internamiento = $this->Internamiento_Model->get_internamiento_id($id);
+                $this->sendEmail("", $internamiento['email'], "aceptado");
+                redirect('internamiento/verificacionSalida');
+            }
         } else {
             redirect('admin');
         }
@@ -627,6 +623,144 @@ class Internamiento extends CI_Controller
         } else {
             redirect('admin');
         }
+    }
+
+    public function reportes()
+    {
+        $autorizados = [1, 2, 3];
+        $aux = $this->autorizacion_session($autorizados);
+        if ($aux !== false) {
+            $data['javascript'] = array('internamiento/reportes.js');
+            $data['_view'] = "internamiento/reportes";
+            $this->load->view("layouts/main", $data);
+        } else
+            redirect('admin');
+    }
+
+    public function reporteIngreso($fInit, $fEnd)
+    {
+        $autorizados = [1, 2, 3];
+        $aux = $this->autorizacion_session($autorizados);
+        if ($aux !== false) {
+            $registros = $this->Internamiento_Model->get_fechaEntrada($fInit, $fEnd);
+            $this->load->helper('fpdf_helper');
+            if ($registros) {
+                fpdf();
+                $pdf = new CellPDF();
+                $pdf->SetMargins(12, 10);
+                $pdf->AddPage();
+                $pdf->SetFont('helvetica', 'B', 16);
+                $pdf->Cell(185, 10, "Lista de Registros por Fecha de Ingreso", 0, 1, "C", 0);
+                $pdf->Cell(185, 10, "Desde " . date('d-m-Y', strtotime($fInit)) . " Hasta " . date('d-m-Y', strtotime($fEnd)), 0, 1, "C", 0);
+                $pdf->Ln(5);
+                $pdf->SetFont('helvetica', 'B', 12);
+                $pdf->Cell(10, 6, utf8_decode("N°"), 1, 0, "C", 0);
+                $pdf->Cell(15, 6, "PLACA", 1, 0, "C", 0);
+                $pdf->Cell(20, 6, "INFRACCION", 1, 0, "C", 0);
+                $pdf->Cell(45, 6, "PROPIETARIO", 1, 0, "C", 0);
+                $pdf->Cell(45, 6, "CHOFER", 1, 0, "C", 0);
+                $pdf->Cell(20, 6, "INGRESO", 1, 0, "C", 0);
+                $pdf->Cell(30, 6, "ESTADO", 1, 1, "C", 0);
+                $pdf->SetFont('helvetica', '', 12);
+                $cont = 1;
+                foreach ($registros as $r) {
+                    $pdf->Cell(10, 6, $cont++, 1, 0, "C", 0);
+                    $pdf->Cell(15, 6, utf8_decode($r['placa']), 1, 0, "C", 0);
+                    $pdf->Cell(20, 6, utf8_decode($r['infraccion']), 1, 0, "C", 0);
+                    $pdf->Cell(45, 6, utf8_decode($r['propietario']), 1, 0, "L", 0);
+                    $pdf->Cell(45, 6, utf8_decode($r['chofer']), 1, 0, "L", 0);
+                    $pdf->Cell(20, 6, utf8_decode(date("d-m-Y", strtotime($r['fch_ing']))), 1, 0, "C", 0);
+                    $mensaje = "";
+                    if ($r['fch_sal']) {
+                        $mensaje = "Culminado";
+                    } elseif ($r['path'] && $r['fch_sal'] == NULL) {
+                        $mensaje = "Verificando";
+                    } else {
+                        $mensaje = "No presentó";
+                    }
+                    $pdf->Cell(30, 6, utf8_decode($mensaje), 1, 1, "C", 0);
+                }
+
+                $pdf->Output('I', "Reporte de ingreso.pdf");
+            } else {
+                fpdf();
+                $pdf = new CellPDF();
+                $pdf->SetMargins(12, 10);
+                $pdf->AddPage();
+                $pdf->SetFont('helvetica', 'B', 16);
+                $pdf->Cell(185, 10, "Lista de Registros por Fecha de Ingreso", 0, 1, "C", 0);
+                $pdf->Cell(185, 10, "Desde " . date('d-m-Y', strtotime($fInit)) . " Hasta " . date('d-m-Y', strtotime($fEnd)), 0, 1, "C", 0);
+                $pdf->Ln(5);
+                $pdf->SetFont('helvetica', 'B', 12);
+                $pdf->Cell(15, 6, "PLACA", 1, 0, "C", 0);
+                $pdf->Cell(20, 6, "INFRACCION", 1, 0, "C", 0);
+                $pdf->Cell(50, 6, "PROPIETARIO", 1, 0, "C", 0);
+                $pdf->Cell(50, 6, "CHOFER", 1, 0, "C", 0);
+                $pdf->Cell(20, 6, "INGRESO", 1, 0, "C", 0);
+                $pdf->Cell(30, 6, "ESTADO", 1, 1, "C", 0);
+                $pdf->Cell(185, 6, "NO SE ENCUENTRAN REGISTROS", 1, 1, "C",0);
+                $pdf->Output('I', "Reporte de ingreso.pdf");
+            }
+        } else
+            redirect('admin');
+    }
+
+    public function reporteSalida($fInit, $fEnd)
+    {
+        $autorizados = [1, 2, 3];
+        $aux = $this->autorizacion_session($autorizados);
+        if ($aux !== false) {
+            $registros = $this->Internamiento_Model->get_fechaSalida($fInit, $fEnd);
+            $this->load->helper('fpdf_helper');
+            if ($registros) {
+                fpdf();
+                $pdf = new CellPDF();
+                $pdf->SetMargins(12, 10);
+                $pdf->AddPage();
+                $pdf->SetFont('helvetica', 'B', 16);
+                $pdf->Cell(185, 10, "Lista de Registros por Fecha de Salida", 0, 1, "C", 0);
+                $pdf->Cell(185, 10, "Desde " . date('d-m-Y', strtotime($fInit)) . " Hasta " . date('d-m-Y', strtotime($fEnd)), 0, 1, "C", 0);
+                $pdf->Ln(5);
+                $pdf->SetFont('helvetica', 'B', 12);
+                $pdf->Cell(10, 6, utf8_decode("N°"), 1, 0, "C", 0);
+                $pdf->Cell(15, 6, "PLACA", 1, 0, "C", 0);
+                $pdf->Cell(20, 6, "INFRACCION", 1, 0, "C", 0);
+                $pdf->Cell(60, 6, "PROPIETARIO", 1, 0, "C", 0);
+                $pdf->Cell(60, 6, "CHOFER", 1, 0, "C", 0);
+                $pdf->Cell(20, 6, "INGRESO", 1, 1, "C", 0);
+                $pdf->SetFont('helvetica', '', 12);
+                $cont = 1;
+                foreach ($registros as $r) {
+                    $pdf->Cell(10, 6, $cont++, 1, 0, "C", 0);
+                    $pdf->Cell(15, 6, utf8_decode($r['placa']), 1, 0, "C", 0);
+                    $pdf->Cell(20, 6, utf8_decode($r['infraccion']), 1, 0, "C", 0);
+                    $pdf->Cell(60, 6, utf8_decode($r['propietario']), 1, 0, "L", 0);
+                    $pdf->Cell(60, 6, utf8_decode($r['chofer']), 1, 0, "L", 0);
+                    $pdf->Cell(20, 6, utf8_decode(date("d-m-Y", strtotime($r['fch_ing']))), 1, 1, "C", 0);
+                }
+
+                $pdf->Output('I', "Reporte de salida.pdf");
+            } else {
+                fpdf();
+                $pdf = new CellPDF();
+                $pdf->SetMargins(12, 10);
+                $pdf->AddPage();
+                $pdf->SetFont('helvetica', 'B', 16);
+                $pdf->Cell(185, 10, "Lista de Registros por Fecha de Salida", 0, 1, "C", 0);
+                $pdf->Cell(185, 10, "Desde " . date('d-m-Y', strtotime($fInit)) . " Hasta " . date('d-m-Y', strtotime($fEnd)), 0, 1, "C", 0);
+                $pdf->Ln(5);
+                $pdf->SetFont('helvetica', 'B', 12);
+                $pdf->Cell(15, 6, "PLACA", 1, 0, "C", 0);
+                $pdf->Cell(20, 6, "INFRACCION", 1, 0, "C", 0);
+                $pdf->Cell(65, 6, "PROPIETARIO", 1, 0, "C", 0);
+                $pdf->Cell(65, 6, "CHOFER", 1, 0, "C", 0);
+                $pdf->Cell(20, 6, "INGRESO", 1, 1, "C", 0);
+                $pdf->SetFont('helvetica', '', 12);
+                $pdf->Cell(185, 6, "NO SE ENCUENTRAN REGISTROS", 1, 1, "C", 0);
+                $pdf->Output('I', "Reporte de salida.pdf");
+            }
+        } else
+            redirect('admin');
     }
 
     public function viewActa($idBoleta)
